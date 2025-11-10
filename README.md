@@ -17,7 +17,7 @@ y = A1[1 - exp(-t/τrise1)][exp(-t/τdecay1)] + A2[1 - exp(-t/τrise2)][exp(-t/�
 - **τrise2** = 3 ms (slow rise time)
 - **τdecay2** = 20 ms (slow decay time)
 
-**Characteristics:** Peaks at ~143 pA within 0.05 ms, mimics fast synaptic events
+**Characteristics:** Peaks at ~138 pA within 0.0001 s (0.1 ms at 10 kHz sampling), mimics fast synaptic events
 
 ### Slow-Rising EPSP (Single Exponential)
 ```
@@ -29,40 +29,40 @@ y = A[1 - exp(-t/τrise)] × [exp(-t/τdecay)]
 - **τrise** = 10 ms (rise time)
 - **τdecay** = 15 ms (decay time)
 
-**Characteristics:** Peaks at ~49 pA around 9 ms, mimics slower synaptic integration
+**Characteristics:** Peaks at ~49 pA around 0.0092 s (9.2 ms), mimics slower synaptic integration
 
 ## Quick Start
 
 ### Generate FAST-RISING EPSP (default):
 ```bash
-python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 20
+python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 10000
 ```
 **Output files (in `output/` directory):**
-- `fast_a1_150pA_a2_70pA_20kHz.atf` - stimulus file
-- `fast_a1_150pA_a2_70pA_20kHz_plot.png` - visualization
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz.atf` - stimulus file
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz_plot.png` - visualization
 
 ### Generate SLOW-RISING EPSP:
 ```bash
-python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 20
+python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 10000
 ```
 **Output files (in `output/` directory):**
-- `slow_a_150pA_tauRise_10ms_20kHz.atf` - stimulus file  
-- `slow_a_150pA_tauRise_10ms_20kHz_plot.png` - visualization
+- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_10000Hz.atf` - stimulus file
+- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_10000Hz_plot.png` - visualization
 
 ### Custom parameters (filenames reflect your settings):
 ```bash
-python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 50 --A1 200 --A2 100
+python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 20000 --A1 200 --A2 100
 ```
-**Output:** `fast_a1_200pA_a2_100pA_50kHz.atf`
+**Output:** `fast_a1_200pA_a2_100pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_20000Hz.atf`
 
 ### Specify custom filename:
 ```bash
-python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 20 --output my_custom_name.atf
+python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 10000 --output my_custom_name.atf
 ```
 
 ### Change output directory:
 ```bash
-python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 20 --output_dir my_data
+python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 10000 --output_dir my_data
 ```
 
 ## CRITICAL: Clampex Protocol Configuration
@@ -83,11 +83,12 @@ According to the Clampex stimulus file tutorial (page 5):
    - Set **Sweeps per run** = 1
 
 3. **Set the Sampling Rate:**
-   
-   **If you used --uniform_sampling flag (e.g., 20 kHz):**
-   - Set **Sampling Interval** = 0.05 ms (for 20 kHz)
+
+   **If you used --uniform_sampling flag (e.g., 10000 Hz = 10 kHz):**
+   - Set **Sampling Interval** = 0.1 ms (for 10000 Hz)
+   - Set **Sampling Interval** = 0.05 ms (for 20000 Hz = 20 kHz)
    - The script will tell you the exact values to use
-   
+
    **If you used variable sampling:**
    - The script calculates an approximate sampling interval
    - OR better: regenerate with `--uniform_sampling` for precise control
@@ -105,51 +106,51 @@ According to the Clampex stimulus file tutorial (page 5):
 
 ## Usage Examples
 
-### Example 1: Fast-rising EPSP at 20 kHz (default, matches tutorial)
+### Example 1: Fast-rising EPSP at 10 kHz (default)
 ```bash
-python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 20
+python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 10000
+```
+**Clampex settings:**
+- Sampling Interval: 0.1 ms (10 kHz)
+- Number of samples: 1000
+- Duration: 0.1 s (100 ms)
+- **Peak: ~138 pA at 0.0001 s**
+
+### Example 2: Slow-rising EPSP at 10 kHz
+```bash
+python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 10000
+```
+**Clampex settings:**
+- Sampling Interval: 0.1 ms (10 kHz)
+- Number of samples: 1000
+- Duration: 0.1 s (100 ms)
+- **Peak: ~49 pA at 0.0092 s**
+
+### Example 3: Higher resolution fast EPSP at 20 kHz
+```bash
+python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 20000 --output high_res.atf
 ```
 **Clampex settings:**
 - Sampling Interval: 0.05 ms (20 kHz)
-- Number of samples: 2001
-- Duration: 100 ms
-- **Peak: ~143 pA at 0.05 ms**
-
-### Example 2: Slow-rising EPSP at 20 kHz
-```bash
-python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 20
-```
-**Clampex settings:**
-- Sampling Interval: 0.05 ms (20 kHz)
-- Number of samples: 2001
-- Duration: 100 ms
-- **Peak: ~49 pA at 9.15 ms**
-
-### Example 3: Higher resolution fast EPSP (50 kHz)
-```bash
-python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 50 --output high_res.atf
-```
-**Clampex settings:**
-- Sampling Interval: 0.02 ms (50 kHz)
-- Number of samples: 5001
-- Duration: 100 ms
+- Number of samples: 2000
+- Duration: 0.1 s (100 ms)
 
 ### Example 4: Custom slow-rising parameters
 ```bash
-python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 20 \
+python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 10000 \
     --A 200 --tau_rise 8 --tau_decay 12 --output custom_slow.atf
 ```
 
 ### Example 5: Custom fast-rising parameters
 ```bash
-python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 20 \
+python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 10000 \
     --A1 200 --tau_decay1 1.5 --A2 80 --output custom_fast.atf
 ```
 
 ### Example 6: Longer duration
 ```bash
-python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 20 \
-    --duration 200 --output long_stimulus.atf
+python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 10000 \
+    --duration 0.200 --output long_stimulus.atf
 ```
 
 ## All Command-Line Options
@@ -172,9 +173,9 @@ SLOW-RISING PARAMETERS (--kinetics slow):
 --tau_decay         Decay time constant (ms) [default: 15.0]
 
 TIME ARRAY:
---duration          Total duration of stimulus (ms) [default: 100.0]
+--duration          Total duration of stimulus (s) [default: 0.100]
 --uniform_sampling  Use uniform sampling interval (recommended)
---sampling_rate     Sampling rate in kHz (with --uniform_sampling) [default: 20.0]
+--sampling_rate     Sampling rate in Hz (with --uniform_sampling) [default: 10000.0]
 
 OUTPUT:
 --output            Output filename (auto-generated if not specified)
@@ -189,12 +190,12 @@ OUTPUT:
 By default, filenames are automatically generated based on your parameters:
 
 **Fast-rising examples:**
-- `fast_a1_150pA_a2_70pA_20kHz.atf` (default parameters, 20 kHz)
-- `fast_a1_200pA_a2_100pA_50kHz.atf` (custom amplitudes, 50 kHz)
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz.atf` (default parameters, 10 kHz)
+- `fast_a1_200pA_a2_100pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_20000Hz.atf` (custom amplitudes, 20 kHz)
 
 **Slow-rising examples:**
-- `slow_a_150pA_tauRise_10ms_20kHz.atf` (default parameters, 20 kHz)
-- `slow_a_200pA_tauRise_5ms_50kHz.atf` (custom parameters, 50 kHz)
+- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_10000Hz.atf` (default parameters, 10 kHz)
+- `slow_a_200pA_tauRise_5ms_tauDecay_12ms_20000Hz.atf` (custom parameters, 20 kHz)
 
 This makes it easy to organize and identify files by their parameters!
 
@@ -225,8 +226,8 @@ This creates `epsp_comparison.png` showing:
 - Direct overlay comparison
 
 **Key Differences:**
-- **Fast-rising**: Peaks at ~143 pA in 0.05 ms, rapid rise and decay
-- **Slow-rising**: Peaks at ~49 pA in 9.15 ms, gradual rise and decay
+- **Fast-rising**: Peaks at ~143 pA in 0.00005 s (0.05 ms), rapid rise and decay
+- **Slow-rising**: Peaks at ~49 pA in 0.0092 s (9.2 ms), gradual rise and decay
 - **Use fast** for mimicking AMPA-like synaptic currents
 - **Use slow** for mimicking slower synaptic integration or NMDA-like kinetics
 
@@ -264,8 +265,9 @@ This creates `epsp_comparison.png` showing:
 
 The ATF (Axon Text File) format is a tab-delimited text file:
 - Header lines define metadata
-- Column 1: Time (ms) - reference only
+- Column 1: Time (s) - reference only
 - Column 2: Current amplitude (pA) - this is what matters!
+- Comment line includes all generation parameters for documentation
 
 You can open and edit ATF files in Excel if needed (see tutorial page 7-8).
 
@@ -297,14 +299,14 @@ The script provides:
 
 ### Example Output Files
 
-**Standard 20 kHz sampling:**
-- `example_20kHz.atf` - 2001 points, 100 ms duration
-- `example_20kHz.png` - visualization
+**Standard 10 kHz sampling:**
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz.atf` - 1000 points, 0.1 s duration
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz_plot.png` - visualization
 
-**High resolution 50 kHz sampling:**
-- `example_50kHz.atf` - 5001 points, 100 ms duration
-- `example_50kHz.png` - visualization
+**High resolution 20 kHz sampling:**
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_20000Hz.atf` - 2000 points, 0.1 s duration
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_20000Hz_plot.png` - visualization
 
 **Custom parameters:**
-- `example_custom.atf` - larger amplitudes (A1=200, A2=100)
-- `example_custom.png` - visualization
+- Files include all parameters in the filename for easy identification
+- Comment field in ATF file also contains all generation parameters
