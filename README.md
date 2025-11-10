@@ -1,6 +1,6 @@
 # Sim-EPSP Stimulus File Generator for Clampex
 
-This Python script generates Clampex 10.7-compatible ATF stimulus files implementing sim-EPSP waveforms with either **fast-rising** or **slow-rising** kinetics.
+This Python script generates Clampex 10.7-compatible ATF stimulus files implementing sim-EPSP waveforms with either **fast-rising** or **slow-rising** kinetics as described in https://doi.org/10.1126/science.1061395.
 
 ## Two Kinetics Types
 
