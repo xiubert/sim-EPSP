@@ -31,7 +31,7 @@ See page 5 of the Clampex stimulus file tutorial for more details.
 import numpy as np
 import argparse
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
+# matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import os
 
@@ -124,7 +124,7 @@ def single_exponential(t, A, tau_rise, tau_decay):
     return y
 
 
-def generate_time_array(duration=100.0, dt_fine=0.01, dt_coarse=1.0, 
+def generate_time_array(duration=1000.0, dt_fine=0.01, dt_coarse=1.0, 
                         fine_duration=10.0):
     """
     Generate a time array with variable resolution.
@@ -188,13 +188,14 @@ def write_atf_file(filename, time, current, comment="Simulated EPSP"):
         
         f.write(f'"YTop={y_top:.2f}"\n')
         f.write(f'"YBottom={y_bottom:.2f}"\n')
-        f.write('"SyncTimeUnits=5"\n')
+        # in example from clampex, unsure of meaning
+        # f.write('"SyncTimeUnits=5"\n')
         f.write('"SweepStartTimesMS=0.000"\n')
         f.write('"SignalsExported=IN 0"\n')
         f.write('"Signals="\t"IN 0"\n')
         
         # Column headers
-        f.write('"Time (ms)"\t"IN 0 (pA)"\n')
+        f.write('"Time (s)"\t"IN 0 (pA)"\n')
         
         # Data
         for t_val, i_val in zip(time, current):
@@ -362,10 +363,12 @@ def main():
         os.makedirs(args.output_dir)
         print(f"Created output directory: {args.output_dir}")
     
+    # parse units
+
     # Generate time array
     if args.uniform_sampling:
         # Uniform sampling interval (better for Clampex protocol setup)
-        dt = 1.0 / (args.sampling_rate*1000)  # Convert kHz to ms
+        dt = 1.0 / (args.sampling_rate * 1000)  # Convert kHz to ms
         time = np.arange(0, args.duration + dt/2, dt)
         print(f"Using uniform sampling: {args.sampling_rate} kHz ({dt:.4f} ms interval)")
     else:

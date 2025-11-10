@@ -5,3 +5,4 @@ env/
 .env
 bk/
 .DS_Store
+__pycache__/
