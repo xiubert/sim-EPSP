@@ -175,7 +175,7 @@ def write_atf_file(filename, time, current, comment="Simulated EPSP"):
     with open(filename, 'w') as f:
         # ATF header
         f.write("ATF\t1.0\n")
-        f.write("0\t2\n")
+        f.write("8\t2\n")
         f.write('"AcquisitionMode=Episodic Stimulation"\n')
         f.write(f'"Comment={comment}"\n')
         
@@ -188,9 +188,10 @@ def write_atf_file(filename, time, current, comment="Simulated EPSP"):
         
         f.write(f'"YTop={y_top:.2f}"\n')
         f.write(f'"YBottom={y_bottom:.2f}"\n')
+        f.write('"SyncTimeUnits=5"\n')
         f.write('"SweepStartTimesMS=0.000"\n')
         f.write('"SignalsExported=IN 0"\n')
-        f.write('"Signals=\tIN 0"\n')
+        f.write('"Signals="\t"IN 0"\n')
         
         # Column headers
         f.write('"Time (ms)"\t"IN 0 (pA)"\n')
