@@ -186,8 +186,8 @@ def write_atf_file(filename, time, current, comment="Simulated EPSP"):
         y_top = y_max + 0.1 * y_range
         y_bottom = y_min - 0.1 * y_range
         
-        f.write(f'"YTop={y_top:.1f}"\n')
-        f.write(f'"YBottom={y_bottom:.1f}"\n')
+        f.write(f'"YTop={y_top:.2f}"\n')
+        f.write(f'"YBottom={y_bottom:.2f}"\n')
         f.write('"SweepStartTimesMS=0.000"\n')
         f.write('"SignalsExported=IN 0"\n')
         f.write('"Signals=\tIN 0"\n')
@@ -197,12 +197,12 @@ def write_atf_file(filename, time, current, comment="Simulated EPSP"):
         
         # Data
         for t_val, i_val in zip(time, current):
-            f.write(f"{t_val:.3f}\t{i_val:.3f}\n")
+            f.write(f"{t_val:.4f}\t{i_val:.4f}\n")
     
     print(f"ATF file written successfully: {filename}")
-    print(f"Duration: {time[-1]:.3f} ms")
+    print(f"Duration: {time[-1]:.4f} ms")
     print(f"Number of points: {len(time)}")
-    print(f"Peak current: {np.max(current):.3f} pA at {time[np.argmax(current)]:.3f} ms")
+    print(f"Peak current: {np.max(current):.4f} pA at {time[np.argmax(current)]:.4f} ms")
 
 
 def plot_stimulus(time, current, output_filename, title="Simulated EPSP Stimulus", 
@@ -243,7 +243,7 @@ def plot_stimulus(time, current, output_filename, title="Simulated EPSP Stimulus
     peak_idx = np.argmax(current)
     peak_time = time[peak_idx]
     peak_current = current[peak_idx]
-    ax1.plot(peak_time, peak_current, 'ro', markersize=8, label=f'Peak: {peak_current:.1f} pA @ {peak_time:.3f} ms')
+    ax1.plot(peak_time, peak_current, 'ro', markersize=8, label=f'Peak: {peak_current:.1f} pA @ {peak_time:.4f} ms')
     ax1.legend(loc='upper right', fontsize=10)
     
     # Add parameters text box if provided
@@ -364,7 +364,7 @@ def main():
     # Generate time array
     if args.uniform_sampling:
         # Uniform sampling interval (better for Clampex protocol setup)
-        dt = 1.0 / args.sampling_rate  # Convert kHz to ms
+        dt = 1.0 / (args.sampling_rate*1000)  # Convert kHz to ms
         time = np.arange(0, args.duration + dt/2, dt)
         print(f"Using uniform sampling: {args.sampling_rate} kHz ({dt:.4f} ms interval)")
     else:
@@ -472,7 +472,7 @@ def main():
         print(f"Set your episodic protocol to:")
         print(f"  • Sampling Interval: {1.0/args.sampling_rate:.4f} ms ({args.sampling_rate} kHz)")
         print(f"  • Number of samples: {len(time)}")
-        print(f"  • Duration will be: {time[-1]:.3f} ms")
+        print(f"  • Duration will be: {time[-1]:.4f} ms")
     else:
         avg_dt = time[-1] / (len(time) - 1)
         equiv_rate = 1.0 / avg_dt
