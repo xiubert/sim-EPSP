@@ -17,7 +17,9 @@ y = A1[1 - exp(-t/τrise1)][exp(-t/τdecay1)] + A2[1 - exp(-t/τrise2)][exp(-t/�
 - **τrise2** = 3 ms (slow rise time)
 - **τdecay2** = 20 ms (slow decay time)
 
-**Characteristics:** Peaks at ~138 pA within 0.0001 s (0.1 ms at 10 kHz sampling), mimics fast synaptic events
+**Characteristics:** Peaks at ~138 pA within 0.0001 s (0.1 ms at 10 kHz sampling) after stimulus onset, mimics fast synaptic events
+
+**Default Delay:** 20 ms (0.020 s) - zero current baseline before stimulus starts
 
 ### Slow-Rising EPSP (Single Exponential)
 ```
@@ -29,7 +31,24 @@ y = A[1 - exp(-t/τrise)] × [exp(-t/τdecay)]
 - **τrise** = 10 ms (rise time)
 - **τdecay** = 15 ms (decay time)
 
-**Characteristics:** Peaks at ~49 pA around 0.0092 s (9.2 ms), mimics slower synaptic integration
+**Characteristics:** Peaks at ~49 pA around 0.0092 s (9.2 ms) after stimulus onset, mimics slower synaptic integration
+
+**Default Delay:** 20 ms (0.020 s) - zero current baseline before stimulus starts
+
+## Stimulus Delay Feature
+
+All generated stimuli include a **delay period** before the EPSP waveform begins. This provides:
+- A stable baseline for accurate peak detection
+- Realistic experimental conditions (no instantaneous onset)
+- Time for the recording system to stabilize
+
+**Delay Options:**
+1. **Default delay:** 20 ms (0.020 s) - used when no delay option is specified
+2. **Custom delay:** Use `--delay X` where X is the delay in seconds (e.g., `--delay 0.015` for 15 ms)
+3. **No delay:** Use `--delay 0` to start stimulus immediately
+4. **Auto delay:** Use `--auto_delay` to calculate delay as 1/64 of total sweep duration: `(total_samples / 64) × sample_interval`
+
+During the delay period, the current is held at 0 pA. The stimulus onset occurs after the delay period ends.
 
 ## Quick Start
 
@@ -38,22 +57,22 @@ y = A[1 - exp(-t/τrise)] × [exp(-t/τdecay)]
 python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 10000
 ```
 **Output files (in `output/` directory):**
-- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz.atf` - stimulus file
-- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz_plot.png` - visualization
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_20ms_10000Hz.atf` - stimulus file
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_20ms_10000Hz_plot.png` - visualization
 
 ### Generate SLOW-RISING EPSP:
 ```bash
 python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 10000
 ```
 **Output files (in `output/` directory):**
-- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_10000Hz.atf` - stimulus file
-- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_10000Hz_plot.png` - visualization
+- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_delay_20ms_10000Hz.atf` - stimulus file
+- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_delay_20ms_10000Hz_plot.png` - visualization
 
 ### Custom parameters (filenames reflect your settings):
 ```bash
 python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 20000 --A1 200 --A2 100
 ```
-**Output:** `fast_a1_200pA_a2_100pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_20000Hz.atf`
+**Output:** `fast_a1_200pA_a2_100pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_20ms_20000Hz.atf`
 
 ### Specify custom filename:
 ```bash
@@ -64,6 +83,18 @@ python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 1
 ```bash
 python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 10000 --output_dir my_data
 ```
+
+### Custom delay before stimulus:
+```bash
+python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 10000 --delay 0.015
+```
+**Output:** Uses 15 ms delay instead of default 20 ms
+
+### Automatic delay (1/64 of sweep duration):
+```bash
+python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 10000 --auto_delay
+```
+**Note:** Auto delay calculates delay as `(total_samples / 64) * sample_interval`
 
 ## CRITICAL: Clampex Protocol Configuration
 
@@ -112,9 +143,9 @@ python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 1
 ```
 **Clampex settings:**
 - Sampling Interval: 0.1 ms (10 kHz)
-- Number of samples: 1000
-- Duration: 0.1 s (100 ms)
-- **Peak: ~138 pA at 0.0001 s**
+- Number of samples: 1200 (200 delay + 1000 stimulus)
+- Total duration: 0.12 s (120 ms total: 20 ms delay + 100 ms stimulus)
+- **Peak: ~138 pA at 0.0201 s (20.1 ms from sweep start)**
 
 ### Example 2: Slow-rising EPSP at 10 kHz
 ```bash
@@ -122,9 +153,9 @@ python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 1
 ```
 **Clampex settings:**
 - Sampling Interval: 0.1 ms (10 kHz)
-- Number of samples: 1000
-- Duration: 0.1 s (100 ms)
-- **Peak: ~49 pA at 0.0092 s**
+- Number of samples: 1200 (200 delay + 1000 stimulus)
+- Total duration: 0.12 s (120 ms total: 20 ms delay + 100 ms stimulus)
+- **Peak: ~49 pA at 0.0292 s (29.2 ms from sweep start)**
 
 ### Example 3: Higher resolution fast EPSP at 20 kHz
 ```bash
@@ -132,8 +163,8 @@ python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 2
 ```
 **Clampex settings:**
 - Sampling Interval: 0.05 ms (20 kHz)
-- Number of samples: 2000
-- Duration: 0.1 s (100 ms)
+- Number of samples: 2400 (400 delay + 2000 stimulus)
+- Total duration: 0.12 s (120 ms total: 20 ms delay + 100 ms stimulus)
 
 ### Example 4: Custom slow-rising parameters
 ```bash
@@ -147,11 +178,18 @@ python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 1
     --A1 200 --tau_decay1 1.5 --A2 80 --output custom_fast.atf
 ```
 
-### Example 6: Longer duration
+### Example 6: Longer duration with no delay
 ```bash
 python generate_sim_epsp.py --kinetics slow --uniform_sampling --sampling_rate 10000 \
-    --duration 0.200 --output long_stimulus.atf
+    --duration 0.200 --delay 0 --output long_stimulus.atf
 ```
+
+### Example 7: Custom delay timing
+```bash
+python generate_sim_epsp.py --kinetics fast --uniform_sampling --sampling_rate 10000 \
+    --delay 0.050 --output delayed_stimulus.atf
+```
+**Note:** Uses 50 ms delay before stimulus onset
 
 ## All Command-Line Options
 
@@ -174,6 +212,8 @@ SLOW-RISING PARAMETERS (--kinetics slow):
 
 TIME ARRAY:
 --duration          Total duration of stimulus (s) [default: 0.100]
+--delay             Delay before stimulus starts (s) [default: 0.020 = 20 ms]
+--auto_delay        Automatically calculate delay as (total samples / 64) * sample interval
 --uniform_sampling  Use uniform sampling interval (recommended)
 --sampling_rate     Sampling rate in Hz (with --uniform_sampling) [default: 10000.0]
 
@@ -190,27 +230,30 @@ OUTPUT:
 By default, filenames are automatically generated based on your parameters:
 
 **Fast-rising examples:**
-- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz.atf` (default parameters, 10 kHz)
-- `fast_a1_200pA_a2_100pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_20000Hz.atf` (custom amplitudes, 20 kHz)
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_20ms_10000Hz.atf` (default parameters with 20 ms delay, 10 kHz)
+- `fast_a1_200pA_a2_100pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_20ms_20000Hz.atf` (custom amplitudes with 20 ms delay, 20 kHz)
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_0ms_10000Hz.atf` (no delay, 10 kHz)
 
 **Slow-rising examples:**
-- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_10000Hz.atf` (default parameters, 10 kHz)
-- `slow_a_200pA_tauRise_5ms_tauDecay_12ms_20000Hz.atf` (custom parameters, 20 kHz)
+- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_delay_20ms_10000Hz.atf` (default parameters with 20 ms delay, 10 kHz)
+- `slow_a_200pA_tauRise_5ms_tauDecay_12ms_delay_20ms_20000Hz.atf` (custom parameters with 20 ms delay, 20 kHz)
+- `slow_a_150pA_tauRise_10ms_tauDecay_15ms_delay_50ms_10000Hz.atf` (50 ms delay, 10 kHz)
 
 This makes it easy to organize and identify files by their parameters!
 
 ## Plot Output
 
 The script automatically generates a publication-quality plot showing:
-- **Upper panel**: Full time course of the stimulus waveform
+- **Upper panel**: Full time course of the stimulus waveform (including delay period)
   - Peak amplitude marked with red dot
   - Parameters displayed in text box (wheat background for fast, light blue for slow)
   - Zero current line for reference
-- **Lower panel**: Zoomed view of the initial response (first 10 ms)
+  - Delay period visible as baseline before stimulus onset
+- **Lower panel**: Zoomed view of the initial response (first 10 ms after stimulus onset)
   - Shows the rising phase in detail
   - Critical for verifying the kinetics
 
-The plot is saved as a PNG file (300 DPI) and includes all relevant parameters for documentation purposes.
+The plot is saved as a PNG file (300 DPI) and includes all relevant parameters (including delay) for documentation purposes.
 
 ## Comparing Fast vs Slow Kinetics
 
@@ -261,6 +304,13 @@ This creates `epsp_comparison.png` showing:
 - A: **Use uniform sampling** (`--uniform_sampling` flag) for easier Clampex setup
 - Variable sampling creates smaller files but requires calculating average sampling rate
 
+**Q: What is the delay for and how do I use it?**
+- A: The delay creates a baseline period before the stimulus starts
+- Default is 20 ms (0.020 s) of zero current before the EPSP begins
+- Use `--delay 0` to disable delay entirely
+- Use `--auto_delay` for automatic calculation (1/64 of total sweep duration)
+- Delay is included in filename and ATF comment for documentation
+
 ## File Format
 
 The ATF (Axon Text File) format is a tab-delimited text file:
@@ -299,13 +349,13 @@ The script provides:
 
 ### Example Output Files
 
-**Standard 10 kHz sampling:**
-- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz.atf` - 1000 points, 0.1 s duration
-- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_10000Hz_plot.png` - visualization
+**Standard 10 kHz sampling (with default 20 ms delay):**
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_20ms_10000Hz.atf` - 1200 points, 0.12 s total (20 ms delay + 100 ms stimulus)
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_20ms_10000Hz_plot.png` - visualization
 
-**High resolution 20 kHz sampling:**
-- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_20000Hz.atf` - 2000 points, 0.1 s duration
-- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_20000Hz_plot.png` - visualization
+**High resolution 20 kHz sampling (with default 20 ms delay):**
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_20ms_20000Hz.atf` - 2400 points, 0.12 s total (20 ms delay + 100 ms stimulus)
+- `fast_a1_150pA_a2_70pA_tauRise1_0.01ms_tauDecay1_1ms_tauRise2_3ms_tauDecay2_20ms_delay_20ms_20000Hz_plot.png` - visualization
 
 **Custom parameters:**
 - Files include all parameters in the filename for easy identification

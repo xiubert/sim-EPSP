@@ -42,7 +42,7 @@ import matplotlib.pyplot as plt
 import os
 
 
-def generate_filename(kinetics, sampling_rate, A1=None, A2=None, A=None,
+def generate_filename(kinetics, sampling_rate, delay=None, A1=None, A2=None, A=None,
                       tau_rise1=None, tau_rise2=None, tau_rise=None,
                       tau_decay1=None, tau_decay2=None, tau_decay=None):
     """
@@ -50,16 +50,21 @@ def generate_filename(kinetics, sampling_rate, A1=None, A2=None, A=None,
 
     Returns both the base filename and the full path with extension.
     """
+    # Format delay in ms
+    delay_ms = delay * 1000 if delay is not None else 0
+
     if kinetics == 'fast':
-        # Fast-rising: include A1, A2, and all time constants
+        # Fast-rising: include A1, A2, all time constants, and delay
         base = (f"fast_a1_{int(A1)}pA_a2_{int(A2)}pA_"
                 f"tauRise1_{tau_rise1:g}ms_tauDecay1_{tau_decay1:g}ms_"
                 f"tauRise2_{tau_rise2:g}ms_tauDecay2_{tau_decay2:g}ms_"
+                f"delay_{delay_ms:g}ms_"
                 f"{int(sampling_rate)}Hz")
     else:  # slow
-        # Slow-rising: include A and all time constants
+        # Slow-rising: include A, all time constants, and delay
         base = (f"slow_a_{int(A)}pA_"
                 f"tauRise_{tau_rise:g}ms_tauDecay_{tau_decay:g}ms_"
+                f"delay_{delay_ms:g}ms_"
                 f"{int(sampling_rate)}Hz")
 
     return base
@@ -93,16 +98,16 @@ def double_exponential(t, A1, tau_rise1, tau_decay1, A2, tau_rise2, tau_decay2):
     """
     # First component (fast)
     component1 = A1 * (1 - np.exp(-t / tau_rise1)) * np.exp(-t / tau_decay1)
-    
+
     # Second component (slow)
     component2 = A2 * (1 - np.exp(-t / tau_rise2)) * np.exp(-t / tau_decay2)
-    
+
     # Total current
     y = component1 + component2
-    
-    # # Set negative time values to zero
-    # y[t < 0] = 0
-    
+
+    # Set negative time values to zero (handles delay period)
+    y[t < 0] = 0
+
     return y
 
 
@@ -128,10 +133,10 @@ def single_exponential(t, A, tau_rise, tau_decay):
     """
     # Single exponential rise and decay
     y = A * (1 - np.exp(-t / tau_rise)) * np.exp(-t / tau_decay)
-    
-    # # Set negative time values to zero
-    # y[t < 0] = 0
-    
+
+    # Set negative time values to zero (handles delay period)
+    y[t < 0] = 0
+
     return y
 
 
@@ -172,7 +177,7 @@ def write_atf_file(filename, time, current, comment="Simulated EPSP",
                    kinetics=None, A1=None, A2=None, A=None,
                    tau_rise1=None, tau_rise2=None, tau_rise=None,
                    tau_decay1=None, tau_decay2=None, tau_decay=None,
-                   sampling_rate=None):
+                   sampling_rate=None, delay=None):
     """
     Write data to Clampex-compatible ATF format.
 
@@ -196,6 +201,8 @@ def write_atf_file(filename, time, current, comment="Simulated EPSP",
         Decay time constants (ms)
     sampling_rate : float, optional
         Sampling rate (Hz)
+    delay : float, optional
+        Delay before stimulus (s)
     """
     with open(filename, 'w') as f:
         # ATF header
@@ -212,6 +219,8 @@ def write_atf_file(filename, time, current, comment="Simulated EPSP",
         elif kinetics == 'slow' and all(p is not None for p in [A, tau_rise, tau_decay]):
             detailed_comment += (f" | A={A}pA "
                                 f"tau_rise={tau_rise}ms tau_decay={tau_decay}ms")
+        if delay is not None:
+            detailed_comment += f" | delay={delay*1000}ms"
         if sampling_rate is not None:
             detailed_comment += f" | sampling_rate={sampling_rate}Hz"
 
@@ -370,6 +379,10 @@ def main():
     # Time array parameters
     parser.add_argument('--duration', type=float, default=0.100,
                         help='Total duration of stimulus (s)')
+    parser.add_argument('--delay', type=float, default=0.020,
+                        help='Delay before stimulus starts (s) [default: 0.020 = 20 ms]')
+    parser.add_argument('--auto_delay', action='store_true',
+                        help='Automatically calculate delay as (total samples / 64) * sample interval')
     parser.add_argument('--uniform_sampling', action='store_true',
                         help='Use uniform sampling interval (recommended for Clampex)')
     parser.add_argument('--sampling_rate', type=float, default=10000.0,
@@ -407,8 +420,22 @@ def main():
     if args.uniform_sampling:
         # Uniform sampling interval (better for Clampex protocol setup)
         dt = 1.0 / args.sampling_rate  # Sampling rate in Hz, dt in seconds
-        time = np.arange(0, args.duration, dt)  # Duration in seconds
+
+        # Calculate delay
+        if args.auto_delay:
+            # Total sweep includes delay + stimulus duration
+            total_samples = int((args.delay + args.duration) / dt)
+            delay = (total_samples / 64) * dt
+            print(f"Auto-calculated delay: {delay:.6f} s ({delay*1000:.3f} ms)")
+        else:
+            delay = args.delay
+            print(f"Using specified delay: {delay:.6f} s ({delay*1000:.3f} ms)")
+
+        # Generate full time array (delay + stimulus)
+        total_duration = delay + args.duration
+        time = np.arange(0, total_duration, dt)
         print(f"Using uniform sampling: {args.sampling_rate} Hz ({dt:.6f} s interval)")
+        print(f"Total duration: {total_duration:.6f} s (delay: {delay*1000:.3f} ms + stimulus: {args.duration*1000:.3f} ms)")
     else:
         # Variable resolution sampling (function generates time in ms, convert to s)
         duration_ms = args.duration * 1000  # Convert duration from s to ms
@@ -420,16 +447,34 @@ def main():
         )
         # Convert time from ms to seconds
         time = time_ms / 1000
+
+        # Calculate delay for variable sampling
+        if args.auto_delay:
+            dt_avg = time[1] - time[0]  # Approximate dt
+            total_samples = len(time)
+            delay = (total_samples / 64) * dt_avg
+            print(f"Auto-calculated delay: {delay:.6f} s ({delay*1000:.3f} ms)")
+        else:
+            delay = args.delay
+            print(f"Using specified delay: {delay:.6f} s ({delay*1000:.3f} ms)")
+
+        # Add delay by prepending time points
+        delay_samples = int(delay / (time[1] - time[0]))
+        delay_time = np.linspace(0, delay, delay_samples, endpoint=False)
+        time = np.concatenate([delay_time, time + delay])
         print("Using variable resolution sampling")
     
     # Calculate current values based on kinetics type
     print(f"Kinetics type: {args.kinetics.upper()}")
-    
+
+    # Create time array relative to stimulus start (subtract delay)
+    time_stimulus = time - delay
+
     if args.kinetics == 'fast':
         # Fast-rising: double-exponential
         # Convert tau parameters from ms to seconds
         current = double_exponential(
-            time,
+            time_stimulus,
             A1=args.A1,
             tau_rise1=args.tau_rise1 / 1000,
             tau_decay1=args.tau_decay1 / 1000,
@@ -443,6 +488,7 @@ def main():
         if args.output is None:
             base_filename = generate_filename(
                 'fast', args.sampling_rate,
+                delay=delay,
                 A1=args.A1, A2=args.A2,
                 tau_rise1=args.tau_rise1, tau_rise2=args.tau_rise2,
                 tau_decay1=args.tau_decay1, tau_decay2=args.tau_decay2
@@ -456,7 +502,7 @@ def main():
         # Slow-rising: single-exponential
         # Convert tau parameters from ms to seconds
         current = single_exponential(
-            time,
+            time_stimulus,
             A=args.A,
             tau_rise=args.tau_rise / 1000,
             tau_decay=args.tau_decay / 1000
@@ -467,6 +513,7 @@ def main():
         if args.output is None:
             base_filename = generate_filename(
                 'slow', args.sampling_rate,
+                delay=delay,
                 A=args.A,
                 tau_rise=args.tau_rise,
                 tau_decay=args.tau_decay
@@ -484,6 +531,7 @@ def main():
                       A1=args.A1, A2=args.A2,
                       tau_rise1=args.tau_rise1, tau_decay1=args.tau_decay1,
                       tau_rise2=args.tau_rise2, tau_decay2=args.tau_decay2,
+                      delay=delay,
                       sampling_rate=args.sampling_rate)
     else:
         write_atf_file(output_file, time, current,
@@ -491,6 +539,7 @@ def main():
                       kinetics='slow',
                       A=args.A,
                       tau_rise=args.tau_rise, tau_decay=args.tau_decay,
+                      delay=delay,
                       sampling_rate=args.sampling_rate)
     
     # Generate plot
