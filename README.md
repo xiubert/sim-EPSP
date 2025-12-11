@@ -211,7 +211,7 @@ SLOW-RISING PARAMETERS (--kinetics slow):
 --tau_decay         Decay time constant (ms) [default: 15.0]
 
 TIME ARRAY:
---duration          Total duration of stimulus (s) [default: 0.100]
+--duration          Total duration of stimulus (s) [default: 0.150]
 --delay             Delay before stimulus starts (s) [default: 0.020 = 20 ms]
 --auto_delay        Automatically calculate delay as (total samples / 64) * sample interval
 --uniform_sampling  Use uniform sampling interval (recommended)

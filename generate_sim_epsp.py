@@ -377,7 +377,7 @@ def main():
                         help='[SLOW] Decay time constant (ms)')
     
     # Time array parameters
-    parser.add_argument('--duration', type=float, default=0.100,
+    parser.add_argument('--duration', type=float, default=0.150,
                         help='Total duration of stimulus (s)')
     parser.add_argument('--delay', type=float, default=0.020,
                         help='Delay before stimulus starts (s) [default: 0.020 = 20 ms]')
@@ -541,6 +541,15 @@ def main():
                       tau_rise=args.tau_rise, tau_decay=args.tau_decay,
                       delay=delay,
                       sampling_rate=args.sampling_rate)
+
+    # Write command file
+    command_file = os.path.join(args.output_dir, base_filename + '_command.txt')
+    with open(command_file, 'w') as f:
+        # Reconstruct the command from sys.argv
+        import sys
+        command = ' '.join(sys.argv)
+        f.write(command + '\n')
+    print(f"Command file written: {command_file}")
     
     # Generate plot
     if not args.no_plot:
